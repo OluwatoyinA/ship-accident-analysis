@@ -1,0 +1,223 @@
+---
+title: "Untitled"
+output: word_document
+date: "2026-09-22"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r descriptive_statistics}
+# Import the data
+ships <- read.csv(
+  "ShipAccidents.csv",
+  na.strings = "NA"
+)
+
+# Create one construction-era variable
+ships$construction_era <- with(
+  ships,
+  ifelse(
+    construction1 == 1, "Construction 1",
+    ifelse(
+      construction2 == 1, "Construction 2",
+      ifelse(
+        construction3 == 1, "Construction 3",
+        "Reference"
+      )
+    )
+  )
+)
+
+# Convert categorical variables to factors
+ships$construction_era <- factor(
+  ships$construction_era,
+  levels = c(
+    "Reference",
+    "Construction 1",
+    "Construction 2",
+    "Construction 3"
+  )
+)
+
+ships$operational <- factor(ships$operational)
+
+# Retain observations with nonmissing exposure
+ships_analysis <- subset(
+  ships,
+  !is.na(exposure)
+)
+
+# Check dimensions and missing values
+dim(ships)
+colSums(is.na(ships))
+nrow(ships_analysis)
+
+# Select variables for descriptive statistics
+variables <- ships_analysis[
+  c("accidents", "exposure", "service_months")
+]
+
+# Calculate descriptive statistics
+descriptive_table <- data.frame(
+  Variable = names(variables),
+  Mean = sapply(variables, mean),
+  SD = sapply(variables, sd),
+  Median = sapply(variables, median),
+  Minimum = sapply(variables, min),
+  Maximum = sapply(variables, max),
+  row.names = NULL
+)
+
+# Round only the numeric columns
+descriptive_table[-1] <- round(
+  descriptive_table[-1],
+  2
+)
+
+# Display the table
+descriptive_table
+```
+
+
+```{r accident_occurrence}
+# Import the data
+ships <- read.csv(
+  "ShipAccidents.csv",
+  na.strings = "NA"
+)
+
+# Create construction-era variable
+ships$construction_era <- with(
+  ships,
+  ifelse(construction1 == 1, "Construction 1",
+  ifelse(construction2 == 1, "Construction 2",
+  ifelse(construction3 == 1, "Construction 3",
+                             "Reference")))
+)
+
+ships$construction_era <- factor(
+  ships$construction_era,
+  levels = c(
+    "Reference",
+    "Construction 1",
+    "Construction 2",
+    "Construction 3"
+  )
+)
+
+# Convert operational status to a factor
+ships$operational <- factor(
+  ships$operational,
+  levels = c(0, 1),
+  labels = c("Category 0", "Category 1")
+)
+
+# Construct the binary outcome
+# 1 = at least one accident; 0 = no accidents
+ships$accident_event <- ifelse(ships$accidents > 0, 1, 0)
+
+ships$accident_status <- factor(
+  ships$accident_event,
+  levels = c(0, 1),
+  labels = c("No accidents", "At least one accident")
+)
+
+# Examine sample size and missing values
+dim(ships)
+colSums(is.na(ships))
+
+# Retain observations with complete information
+ships_analysis <- subset(
+  ships,
+  !is.na(exposure) &
+  !is.na(operational) &
+  !is.na(construction_era)
+)
+
+nrow(ships_analysis)
+
+# Frequency and proportion of binary outcome
+outcome_frequency <- table(ships_analysis$accident_status)
+outcome_frequency
+round(prop.table(outcome_frequency) * 100, 1)
+
+# Descriptive statistics for exposure
+exposure_statistics <- data.frame(
+  Mean = mean(ships_analysis$exposure),
+  SD = sd(ships_analysis$exposure),
+  Median = median(ships_analysis$exposure),
+  Minimum = min(ships_analysis$exposure),
+  Maximum = max(ships_analysis$exposure)
+)
+
+round(exposure_statistics, 2)
+
+# Outcome by operational status
+operational_table <- table(
+  ships_analysis$operational,
+  ships_analysis$accident_status
+)
+
+operational_table
+round(prop.table(operational_table, margin = 1) * 100, 1)
+
+# Outcome by construction era
+construction_table <- table(
+  ships_analysis$construction_era,
+  ships_analysis$accident_status
+)
+
+construction_table
+round(prop.table(construction_table, margin = 1) * 100, 1)
+
+# Boxplot of exposure by accident outcome
+boxplot(
+  exposure ~ accident_status,
+  data = ships_analysis,
+  xlab = "Accident Outcome",
+  ylab = "Exposure",
+  main = "Exposure by Accident Outcome",
+  col = c("lightgray", "lightblue")
+)
+
+# Proportion with at least one accident by operational status
+operational_proportion <- prop.table(
+  operational_table,
+  margin = 1
+)[, "At least one accident"]
+
+barplot(
+  operational_proportion,
+  ylim = c(0, 1),
+  ylab = "Proportion with at Least One Accident",
+  xlab = "Operational Status",
+  main = "Accident Occurrence by Operational Status",
+  col = "steelblue"
+)
+
+# Proportion with at least one accident by construction era
+construction_proportion <- prop.table(
+  construction_table,
+  margin = 1
+)[, "At least one accident"]
+
+barplot(
+  construction_proportion,
+  ylim = c(0, 1),
+  ylab = "Proportion with at Least One Accident",
+  xlab = "Construction Era",
+  main = "Accident Occurrence by Construction Era",
+  col = "darkseagreen",
+  las = 2
+)
+```
+
+
